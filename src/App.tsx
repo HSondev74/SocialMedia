@@ -9,7 +9,7 @@ type Props = {};
 
 const App = (props: Props) => {
   return (
-    <main className="flex h-screen">
+    <main className="flex h-screen bg-black">
       <Routes>
         {/* public routes */}
         <Route element={<AuthLayout />}>
