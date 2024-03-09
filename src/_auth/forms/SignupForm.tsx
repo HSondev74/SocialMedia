@@ -14,17 +14,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { SignupValidation } from "@/lib/validation";
 import { z } from "zod";
 import Loader from "@/components/shared/Loader";
-import { Link } from "react-router-dom";
-import { createUserAccount } from "@/lib/appwrite/api";
+import { Link, useNavigate } from "react-router-dom";
+import { useCreateUserAccount, useSignInAccount } from "@/lib/react-query/queryAndMutation";
+import { useUserContext } from "@/context/AuthContext";
 
 
 
 type Props = {}
 
 const SignupForm = (props: Props) => {
+  const nav = useNavigate()
+  const { checkAuthUser, isLoading: isUserLoading } = useUserContext();
 
-  const isLoading = false;
+  const { mutateAsync: createUserAccount, isPending: isCreatingAccount } = useCreateUserAccount()
 
+  const { mutateAsync: signInAccount, isPending: isSigniisngIn } = useSignInAccount()
 
   // 1. Define your form.
   const form = useForm<z.infer<typeof SignupValidation>>({
@@ -40,8 +44,26 @@ const SignupForm = (props: Props) => {
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof SignupValidation>) {
     const newUser = await createUserAccount(values);
-    console.log(newUser);
+    if (!newUser) {
+      return;
+    }
+    const session = await signInAccount({
+      email: values.email,
+      password: values.password
+    })
 
+    if (!session) {
+      alert("Sign in failed. Please try again.")
+    }
+
+    const isLoggedIn = await checkAuthUser();
+
+    if (isLoggedIn) {
+      form.reset();
+      nav('/');
+    } else {
+      alert("Sign in failed. Please try again")
+    }
   }
 
   return (
@@ -104,7 +126,7 @@ const SignupForm = (props: Props) => {
             )}
           />
           <Button type="submit" className="border-2 bg-blue-800 px-3 py-2 rounded-sm"  >
-            {isLoading ? (
+            {isCreatingAccount ? (
               <div className="flex-center gap-2">
                 <Loader /> Loading...
               </div>
